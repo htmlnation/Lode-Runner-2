@@ -1,0 +1,166 @@
+<HTML><HEAD><TITLE>Ladders'n'Things By Alan Bond</TITLE>
+<HTA:application id="frmMain" singleinstance="yes" showintaskbar="yes" maximizeButton="no"
+minimizeButton="no" border="thin" navigable="yes" windowState="normal" contextmenu="no"/>
+<SCRIPT language="VBScript"> Option Explicit
+
+Dim gfx,MainLoopRunner,tts,Fav,DmdCount,PH,PV,P1,P2,KDX,KDY,FSO,StrPath
+Dim map(17,16),DMD(17,16),Mov(3),DX(3),DY(3),MT(3),Pulse(3),PU(3)
+gfx = Array ("202020FF040404FF","80AAD4AAD4AAD4FF","8888F888888F8888","0202FF2020FF0202","007E425A5A427E00", _
+"9942249999244299","DD007700DD007700","FF55AA000055AAFF","44FF1111FF444444","83070E1C3870E0C1", _
+"3C04043C3C04043C", "7E007E7E7E007E7E","E781E7E7E781E7E7","BDBD81BDBDBD81BD","E7E4E5E127A787E7", _
+"812400423C000081","81001200211E0081","81002400423C0081","8100480084780081","8100002400423C81","812424003C420081", _
+"810066000024247E","9900426600813C7E","C3811824241881C3","BD185ABDC3811881","995A3CE7E73C5A99", _
+"81240081E7E7C381","99004224810066BD","8124005A7E5A0081","DB99810024003C81","6642812400994266", _
+"FFF7EBC580C1E3F7","FFE3C5828280C1E3","FFF7EBC9B6C9EBF7","FFFFFFE3C58280C1","FFF7DDE3A2E3DDF7")	
+Fav = Array (0,82,83,102,223,229,1433,2331,3233,5394,5422,6578,6784,10343,13331,15901,32388,52421)
+Set tts = Nothing:Set tts = CreateObject("Sapi.SpVoice"):Set tts.Voice = tts.GetVoices.Item(0)
+
+Sub Window_OnLoad
+	dim L,G,S,fs,ts,opt:Self.Resizeto 522,548:Self.Moveto (screen.width/2)-261,(screen.height/2)-266
+	Set FSO = CreateObject("Scripting.FileSystemObject")
+	strPath=FSO.GetFolder("."):if right(StrPath,1)<>"\" then strPath=StrPath & "\"
+	For G = 0 to ubound(Gfx)
+		S="#define XBM_width 8" & vbcrlf & "#define XBM_height 8" & vbcrlf & "static char XBM_bits[]={"
+		For L = 1 to len(gfx(G)) Step 2:S=S & "0x" & Mid(gfx(G),L,2) & ",":Next
+		S=S & "};":Set ts = FSO.OpenTextFile(StrPath & "G" & G & ".XBM", 2, True):ts.Write(S):ts.Close
+	Next	
+	For L = 0 to ubound(Fav):Set opt=Document.createElement("OPTION")
+	opt.Text=Fav(L):opt.value=Fav(L):cmbBox.Add(opt):next:PlayGame()
+End Sub	
+
+Sub MakeLevel()
+	Dim X,Y,H1,H2,L1,L2,E:Rnd(-1):Randomize htmLVL.value:DmdCount=0
+	For Y=0 to 16:For X=0 to 17
+		if y<>0 and y<>16 and x<>0 and x<>17 then map(x,y)=0 else map (x,y)=1 end if
+	next:next
+	For Y=2 to 14 step 2
+		For X=1 to 16:map(x,y)=1:next
+		H1=rand(4,7):map(H1,Y)=0:H2=rand(9,13):map(H2,Y)=0:select case rand(0,2)
+		case 0:For X=1 to H1:map(x,y)=0:next:L1=rand(H1,H2):L2=rand(H2,16)
+		case 1:For X=H1 to H2:map(x,y)=0:next:L1=rand(1,3):L2=rand(H2,16)
+		case 2:For X=H2 to 16:map(x,y)=0:next:L1=rand(1,3):L2=rand(H1,H2)
+		end select:Map(L1,Y)=2:Map(L2,Y)=2
+	next
+	For Y=1 to 15:For X=1 to 16
+		If map(X,Y)=2 and map(X,Y+1)=0 then map(X,Y+1)=2
+		If map(X,Y)=1 and map(X,Y-1)=0 and Rand(0,1)=0 and y>2 then map(X,Y-1)=3:DmdCount=DmdCount+1
+	Next:Next
+	Do While E<3:X=rand(1,16):if map (X,2)<>0 and map(X,1)=0 then map(X,1)=4:E=E+1
+	loop
+	Do While E<4:X=rand(1,16):if map (X,15)=0 then map(X,15)=5:E=E+1
+	loop
+End Sub	
+
+Sub DrawLevel()
+	Dim X,Y,S,Gr,Col,WCol,LCol,DCol,ECol,YCol,I,M,WGr,LGr,DGr,EGr
+	WCol=RandC(40,180):LCol=RandC(40,200):DCol=RandC(160,255):ECol=RandC(90,200):YCol=RandC(80,200)
+	WGr=Rand (0,9):LGr=Rand(10,14):EGr=Rand(21,30):DGr=Rand(31,35)
+	
+	For Y=1 to 15:For X=1 to 16:Select case map(X,Y)
+		Case 0:Gr=-1
+		Case 1:Gr=WGr:Col=WCol
+		Case 2:Gr=LGr:Col=LCol
+		Case 3:Gr=DGr:Col=DCol:DMD(X,Y)=I
+		Case 4:Gr=EGr:Col=ECol:Mov(M)=I:M=M+1:Map(X,Y)=0
+		Case 5:Gr=5:Col=YCol:Mov(M)=I:M=M+1:Map(X,Y)=0
+		End Select
+		if Gr<>-1 then s=s & "<img src='G" & Gr & ".XBM' width=32 height=32 style='position:absolute; left:" & _
+		(X-1)*32 & ";top:" & (Y-1)*32 & ";background-color:#" & Col & "'>":I=I+1
+	Next:Next:htmViewport.innerhtml=S
+	PH=rand(0,1):PV=rand(0,1):P1=rand(15,25):P2=rand(26,35):if PV=0 and PH=0 then PV=1
+	For X = 0 to 3:document.images(Mov(X)).style.zIndex=1000-X:MT(X)=0:DX(X)=0:DY(X)=0:Pulse(X)=P1+1:PU(X)=RandD():next
+End Sub
+
+Sub MainLoop()
+	Dim L,MX,MY,X,Y,YX,YY
+	YX=document.images(Mov(3)).style.pixelleft
+	YY=document.images(Mov(3)).style.pixeltop
+	For L =0 to 3:X=document.images(Mov(L)).style.pixelleft:Y=document.images(Mov(L)).style.pixeltop
+		MT(L)=MT(L)-1:if MT(L)<=0 then
+		 	MT(L)=32:MX=cint(X/32)+1:MY=cint(Y/32)+1
+			If L=3 then
+				DX(L)=KDX:Select case map(MX,MY+1)
+				Case 0,3:DY(L)=1:DX(L)=0
+				Case 2:DY(L)=KDY:if map(MX,MY)=0 and DY(L)=-1 then DY(L)=0
+				Case Else:If DY(L)<>0 then tts.speak"xxe",1:DY(L)=0
+				end select:If map(MX+DX(L),MY)=1 then DX(L)=0
+				Select Case map(MX,MY)
+					Case 2:DY(L)=KDY:if KDY=1 and map(MX,MY+1)<>2 then DY(L)=0
+					Case 3:	tts.Speak "umm",1:Map(MX,MY)=0:DmdCount=DmdCount-1
+					document.images(DMD(MX,MY)).style.pixeltop=-800
+					If DmdCount=<0 then
+						tts.speak "iqqqqqqqqqqqqqqq":htmLVL.value = htmLVL.value + 1
+						window.clearInterval(MainLoopRunner):PlayGame():Exit sub
+					End If
+				End Select
+				document.images(Mov(L)).src= "G" & ((DY(L)*2) + DX(L)+2)+15 & ".XBM"
+			else
+				IF DX(L)<>0 then
+					If map(MX,MY+1)=2 and YY>Y then DY(L)=sgn(YY-Y):DX(L)=0
+					If map(MX,MY)=2 then DY(L)=sgn(YY-Y):DX(L)=0					
+					If map(MX,MY+DY(L))=1 then DX(L)=RandD():DY(L)=0
+					If map(MX,MY)=0 and DY(L)=-1 then DX(L)=RandD():DY(L)=0	
+					If map(MX+DX(L),MY)=1 then DX(L)=-DX(L):DY(L)=0
+				else	
+					If map(MX,MY)=0 or map(MX,MY+DY(L))=1 then DX(L)=RandD():DY(L)=0
+					If DY(L)=0 and DX(L)=0 then DX(L)=RandD():DY(L)=0
+					If map(MX+DX(L),MY)=1 then DX(L)=-DX(L):DY(L)=0
+				End if
+				If map(MX,MY+1)=0 or map(MX,MY+1)=3 then DX(L)=0:DY(L)=1  
+			end if					
+		end if
+		If L<>3 then
+			If (ABS(YY-Y)<26 and ABS(YX-X)<26) then 
+				document.images(Mov(3)).src= "G20.XBM":tts.Speak "uxxxxxxx",1
+				window.clearInterval(MainLoopRunner):document.images(Mov(3)).style.backgroundcolor="red"
+			End If
+			If PH=1 then document.images(Mov(l)).style.width=Pulse(L)
+			If PV=1 then document.images(Mov(l)).style.height=Pulse(L)
+			Pulse(L)=Pulse(L)+PU(L):If Pulse(L)=<P1 or Pulse(L)=>P2 then PU(L)=-PU(L)
+		End If
+		document.images(Mov(L)).style.pixelleft = X + DX(L):document.images(Mov(L)).style.pixeltop = Y + DY(L)
+	Next
+End Sub
+
+sub document_onkeydown()
+	select case window.event.Keycode
+	case 38:KDY=-1:KDX=0
+	case 40:KDY=1:KDX=0
+	case 37:KDX=-1:KDY=0
+	case 39:KDX=1:KDY=0
+	end select	
+end sub	
+sub document_onkeyup()
+	select case  window.event.Keycode
+	case 38:if KDY<>1 then KDY=0
+	case 40:if KDY<>-1 then KDY=0
+	case 37:if KDX<>1 then KDX=0
+	case 39:if KDX<>-1 then KDX=0
+	end select
+end sub	
+
+Function Rand(Lo,Hi):Rand=Int((hi-lo+1)*Rnd+lo):end function
+Function RandC(Lo,Hi)
+	Dim L,S,V:For L = 0 to 2:V=Hex(rand(Lo,Hi)):if len(V)=1 then V="0" & V
+	RandC=RandC & V:next
+end function	
+Function RandD():RandD=Int(rnd(1)*2)-1:if RandD=0 then RandD=1
+end function
+	
+Sub PlayGame()	
+	tts.Speak "ihhhhhhhhhhhhh",1:window.clearInterval(MainLoopRunner):MakeLevel:DrawLevel
+	MainLoopRunner = window.setInterval ("MainLoop", 1)	
+End Sub
+Sub CLevel(LAdd):htmLVL.value=htmLVL.value+LAdd:PlayGame():End Sub
+Sub cmbSel():htmLVL.value=cmbBox.value:PlayGame():end sub	
+	
+</SCRIPT>
+<BODY scroll="no" BGColor=buttonface style="margin:0px;font-family:Arial;font-size:12PX">
+<INPUT type="button" value="Play" onClick="PlayGame()" style="Width:100;Height:40"/>
+<DIV STYLE="position:absolute;left:190;top:0">Level<BR>
+<INPUT type="button" value="<" onClick="CLevel(-1)" style="Width:25;">
+<INPUT type="text" ID="htmLVL" value="1" MAXLENGTH="9" style="Width:75;">
+<INPUT type="button" value=">" onClick="CLevel(1)" style="Width:25;"></DIV>
+<DIV STYLE="position:absolute;left:450;top:0">Favorites<BR><select size="1" ID="cmbBox" onchange="cmbSel()"></select></DIV>
+<DIV ID="htmViewport" STYLE="position:absolute;left:0;top:40;width:512;height:480;background-color:#000000;">
+</BODY></HTML>
